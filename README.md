@@ -62,7 +62,7 @@ VITE_STREAM_API_KEY=your_stream_api_key
 
 ---
 
-## 🔧 How to Run the Project
+## 🔧 How to Run the Project 
 
 ### ✅ Start Backend
 ```bash
