@@ -30,11 +30,13 @@ app.get("/health", (req, res) => {
 });
 
 // make our app ready for deployment
-if (ENV.NODE_ENV === "production") {
-  app.use(express.static(path.join(__dirname, "../frontend/dist")));
+console.log("Allowed CORS Origin:", ENV.CLIENT_URL);
 
-  app.get("/{*any}", (req, res) => {
-    res.sendFile(path.join(__dirname, "../frontend", "dist", "index.html"));
+// In production, we don't serve frontend files here because frontend is on Vercel.
+// We only serve the API.
+if (ENV.NODE_ENV === "production") {
+  app.get("/", (req, res) => {
+    res.status(200).json({ msg: "API is running. Frontend is deployed separately." });
   });
 }
 
