@@ -1,6 +1,6 @@
 @import "tailwindcss";
 @plugin "daisyui" {
-  themes: all;
+  themes: forest --default, light, dark;
 }
 
 /* Add cursor pointer to buttons by default - this is coming from tailwind docs */

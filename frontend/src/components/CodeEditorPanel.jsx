@@ -19,7 +19,7 @@ function CodeEditorPanel({
             alt={LANGUAGE_CONFIG[selectedLanguage].name}
             className="size-6"
           />
-          <select className="select select-sm" value={selectedLanguage} onChange={onLanguageChange}>
+          <select className="select select-sm" value={selectedLanguage} onChange={onLanguageChange} aria-label="Select programming language">
             {Object.entries(LANGUAGE_CONFIG).map(([key, lang]) => (
               <option key={key} value={key}>
                 {lang.name}
@@ -28,7 +28,7 @@ function CodeEditorPanel({
           </select>
         </div>
 
-        <button className="btn btn-primary btn-sm gap-2" disabled={isRunning} onClick={onRunCode}>
+        <button className="btn btn-primary btn-sm gap-2" disabled={isRunning} onClick={onRunCode} aria-label={isRunning ? "Code is running" : "Run code"}>
           {isRunning ? (
             <>
               <Loader2Icon className="size-4 animate-spin" />

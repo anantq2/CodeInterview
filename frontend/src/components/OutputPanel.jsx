@@ -1,6 +1,6 @@
 function OutputPanel({ output }) {
   return (
-    <div className="h-full bg-base-100 flex flex-col">
+    <div className="h-full bg-base-100 flex flex-col" role="region" aria-label="Code output">
       <div className="px-4 py-2 bg-base-200 border-b border-base-300 font-semibold text-sm">
         Output
       </div>
