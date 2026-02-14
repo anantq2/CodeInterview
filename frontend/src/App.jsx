@@ -18,6 +18,9 @@ const SessionPage = lazy(() => import("./pages/SessionPage"));
 function App() {
   const { isSignedIn, isLoaded } = useUser();
 
+  console.log("Frontend v1.2: API Fix Loaded"); // Debugging version
+
+
   // this will get rid of the flickering effect
   if (!isLoaded) return null;
 
