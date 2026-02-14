@@ -19,6 +19,7 @@
     "baseline-browser-mapping": "^2.9.19",
     "canvas-confetti": "^1.9.3",
     "date-fns": "^4.1.0",
+    "framer-motion": "^12.34.0",
     "lucide-react": "^0.548.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",

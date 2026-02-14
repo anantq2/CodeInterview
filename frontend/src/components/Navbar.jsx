@@ -4,65 +4,56 @@ import { UserButton } from "@clerk/clerk-react";
 
 function Navbar() {
   const location = useLocation();
-
-
-
   const isActive = (path) => location.pathname === path;
 
   return (
-    <nav className="bg-base-100/80 backdrop-blur-md border-b border-primary/20 sticky top-0 z-50 shadow-lg" aria-label="Main navigation">
-      <div className="max-w-7xl mx-auto p-4 flex items-center justify-between">
+    <nav className="glass-navbar sticky top-0 z-50 shadow-lg" aria-label="Main navigation">
+      <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
         {/* LOGO */}
         <Link
           to="/"
-          className="group flex items-center gap-3 hover:scale-105 transition-transform duration-200"
+          className="group flex items-center gap-3 hover:scale-105 transition-transform duration-300"
         >
-          <div className="size-10 rounded-xl bg-gradient-to-r from-primary via-secondary to-accent flex items-center justify-center shadow-lg ">
-            <SparklesIcon className="size-6 text-white" />
+          <div className="size-9 rounded-xl bg-gradient-to-br from-primary via-secondary to-accent flex items-center justify-center shadow-lg shadow-primary/20">
+            <SparklesIcon className="size-5 text-white" />
           </div>
-
           <div className="flex flex-col">
-            <span className="font-black text-xl bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent font-mono tracking-wider">CodeInterview</span>
-            <span className="text-xs text-base-content/60 font-medium -mt-1">Code Together</span>
+            <span className="font-extrabold text-lg bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent tracking-tight">
+              CodeInterview
+            </span>
+            <span className="text-[10px] text-base-content/50 font-medium -mt-0.5 tracking-wider uppercase">
+              Code Together
+            </span>
           </div>
         </Link>
 
         <div className="flex items-center gap-1">
-          {/* PROBLEMS PAGE LINK */}
-          <Link
-            to={"/problems"}
-            className={`px-4 py-2.5 rounded-lg transition-all duration-200 
-              ${isActive("/problems")
-                ? "bg-primary text-primary-content"
-                : "hover:bg-base-200 text-base-content/70 hover:text-base-content"
-              }
-              
-              `}
-          >
-            <div className="flex items-center gap-x-2.5">
-              <BookOpenIcon className="size-4" />
-              <span className="font-medium hidden sm:inline">Problems</span>
-            </div>
-          </Link>
+          {/* NAV LINKS */}
+          {[
+            { path: "/problems", icon: BookOpenIcon, label: "Problems" },
+            { path: "/dashboard", icon: LayoutDashboardIcon, label: "Dashboard" },
+          ].map(({ path, icon: Icon, label }) => (
+            <Link
+              key={path}
+              to={path}
+              className={`relative px-4 py-2 rounded-xl transition-all duration-300 
+                ${isActive(path)
+                  ? "bg-primary/15 text-primary"
+                  : "hover:bg-base-content/5 text-base-content/55 hover:text-base-content"
+                }`}
+            >
+              <div className="flex items-center gap-2">
+                <Icon className="size-4" />
+                <span className="font-semibold text-sm hidden sm:inline">{label}</span>
+              </div>
+              {/* Active indicator */}
+              {isActive(path) && (
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-full bg-primary" />
+              )}
+            </Link>
+          ))}
 
-          {/* DASHBORD PAGE LINK */}
-          <Link
-            to={"/dashboard"}
-            className={`px-4 py-2.5 rounded-lg transition-all duration-200 
-              ${isActive("/dashboard")
-                ? "bg-primary text-primary-content"
-                : "hover:bg-base-200 text-base-content/70 hover:text-base-content"
-              }
-              
-              `}
-          >
-            <div className="flex items-center gap-x-2.5">
-              <LayoutDashboardIcon className="size-4" />
-              <span className="font-medium hidden sm:inline">Dashboard</span>
-            </div>
-          </Link>
-
-          <div className="ml-4 mt-2">
+          <div className="ml-4">
             <UserButton />
           </div>
         </div>

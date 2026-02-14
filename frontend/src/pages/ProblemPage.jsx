@@ -122,7 +122,7 @@ function ProblemPage() {
             />
           </Panel>
 
-          <PanelResizeHandle className="w-2 bg-base-300 hover:bg-primary transition-colors cursor-col-resize" />
+          <PanelResizeHandle className="w-1.5 bg-base-300/50 hover:bg-primary/30 transition-colors duration-300 cursor-col-resize rounded-full mx-0.5" />
 
           {/* right panel- code editor & output */}
           <Panel defaultSize={60} minSize={30}>
@@ -139,7 +139,7 @@ function ProblemPage() {
                 />
               </Panel>
 
-              <PanelResizeHandle className="h-2 bg-base-300 hover:bg-primary transition-colors cursor-row-resize" />
+              <PanelResizeHandle className="h-1.5 bg-base-300/50 hover:bg-primary/30 transition-colors duration-300 cursor-row-resize rounded-full my-0.5" />
 
               {/* Bottom panel - Output Panel*/}
 

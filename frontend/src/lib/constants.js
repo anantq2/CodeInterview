@@ -42,3 +42,21 @@ export const SESSION = {
 export const TOAST_CONFIG = {
     duration: 3000,
 };
+
+// ============================================
+// Language Configuration
+// ============================================
+export const LANGUAGE_CONFIG = {
+    javascript: {
+        label: "JavaScript",
+        monacoLanguage: "javascript",
+    },
+    python: {
+        label: "Python",
+        monacoLanguage: "python",
+    },
+    java: {
+        label: "Java",
+        monacoLanguage: "java",
+    },
+};
