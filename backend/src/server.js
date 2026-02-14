@@ -34,13 +34,10 @@ app.get("/health", (req, res) => {
 // make our app ready for deployment
 console.log("Allowed CORS Origin:", ENV.CLIENT_URL);
 
-// In production, we don't serve frontend files here because frontend is on Vercel.
-// We only serve the API.
-if (ENV.NODE_ENV === "production") {
-  app.get("/", (req, res) => {
-    res.status(200).json({ msg: "API is running. Frontend is deployed separately." });
-  });
-}
+// Always respond to root with API status
+app.get("/", (req, res) => {
+  res.status(200).json({ msg: "API is running. Frontend is deployed separately." });
+});
 
 const startServer = async () => {
   try {

@@ -8,6 +8,19 @@ const axiosInstance = axios.create({
 
 console.log("FINAL AXIOS BASEURL:", axiosInstance.defaults.baseURL);
 
+// Add Clerk auth token to every request (required for cross-origin API calls)
+axiosInstance.interceptors.request.use(async (config) => {
+  try {
+    const token = await window.Clerk?.session?.getToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  } catch (err) {
+    console.error("Failed to get Clerk token:", err);
+  }
+  return config;
+});
+
 // Global response error interceptor
 axiosInstance.interceptors.response.use(
   (response) => response,
