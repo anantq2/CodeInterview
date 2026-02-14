@@ -2,9 +2,11 @@ import axios from "axios";
 import toast from "react-hot-toast";
 
 const axiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
-  withCredentials: true, // by adding this field browser will send the cookies to server automatically, on every single req
+  baseURL: import.meta.env.VITE_API_URL || "/api",
+  withCredentials: true,
 });
+
+console.log("Axios Base URL:", import.meta.env.VITE_API_URL);
 
 // Global response error interceptor
 axiosInstance.interceptors.response.use(
