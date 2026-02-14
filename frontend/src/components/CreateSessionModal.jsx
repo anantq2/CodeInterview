@@ -61,7 +61,7 @@ function CreateSessionModal({
                     Select Problem <span className="text-error">*</span>
                   </label>
                   <select
-                    className="w-full px-4 py-3 rounded-xl bg-base-content/5 border border-base-content/8 focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition-all outline-none text-sm font-medium"
+                    className="w-full px-4 py-3 rounded-xl bg-base-200 border border-base-content/8 focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition-all outline-none text-sm font-medium text-base-content"
                     value={roomConfig.problem}
                     onChange={(e) => {
                       const problem = Object.values(PROBLEMS).find(
@@ -73,9 +73,9 @@ function CreateSessionModal({
                       });
                     }}
                   >
-                    <option value="">Choose a problem...</option>
+                    <option value="" className="bg-base-200 text-base-content">Choose a problem...</option>
                     {Object.values(PROBLEMS).map((problem) => (
-                      <option key={problem.id} value={problem.title}>
+                      <option key={problem.id} value={problem.title} className="bg-base-200 text-base-content">
                         {problem.title} ({problem.difficulty})
                       </option>
                     ))}
