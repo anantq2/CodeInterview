@@ -1,13 +1,12 @@
 import axios from "axios";
 import toast from "react-hot-toast";
 
-const baseURL = import.meta.env.VITE_API_URL || "";
 const axiosInstance = axios.create({
-  baseURL: baseURL ? `${baseURL}/api` : "/api",
+  baseURL: import.meta.env.VITE_API_URL || "/api",
   withCredentials: true,
 });
 
-console.log("Axios Base URL:", import.meta.env.VITE_API_URL);
+console.log("FINAL AXIOS BASEURL:", axiosInstance.defaults.baseURL);
 
 // Global response error interceptor
 axiosInstance.interceptors.response.use(
