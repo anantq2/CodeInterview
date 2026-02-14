@@ -7,8 +7,7 @@ const axiosInstance = axios.create({
   withCredentials: true,
 });
 
-console.log("Axios Base URL Env:", import.meta.env.VITE_API_URL);
-console.log("FINAL AXIOS BASEURL:", axiosInstance.defaults.baseURL);
+console.log("Axios Base URL:", import.meta.env.VITE_API_URL);
 
 // Global response error interceptor
 axiosInstance.interceptors.response.use(
