@@ -1,7 +1,6 @@
 # ✨ CodeInterview — Full-Stack Coding Interview Platform ✨
 
-![CodeInterview screenshot](frontend\public\codeintervie.png)(frontend\public\codeee.png)
-
+![CodeInterview screenshot](frontend\public\codeintervie.png)
 
 A full-stack, real-time coding interview platform built for mock interviews, pair programming, and DSA practice.
 
