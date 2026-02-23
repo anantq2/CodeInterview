@@ -1,5 +1,5 @@
 import { useUser } from "@clerk/clerk-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { useEndSession, useJoinSession, useSessionById } from "../hooks/useSessions";
 import { PROBLEMS } from "../data/problems";
@@ -7,7 +7,13 @@ import { executeCode } from "../lib/piston";
 import Navbar from "../components/Navbar";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { getDifficultyBadgeClass } from "../lib/utils";
-import { Loader2Icon, LogOutIcon, PhoneOffIcon } from "lucide-react";
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  Loader2Icon,
+  LogOutIcon,
+  PhoneOffIcon,
+} from "lucide-react";
 import CodeEditorPanel from "../components/CodeEditorPanel";
 import OutputPanel from "../components/OutputPanel";
 
@@ -19,8 +25,11 @@ function SessionPage() {
   const navigate = useNavigate();
   const { id } = useParams();
   const { user } = useUser();
+
   const [output, setOutput] = useState(null);
   const [isRunning, setIsRunning] = useState(false);
+  const [isQuestionCollapsed, setIsQuestionCollapsed] = useState(false);
+  const questionPanelRef = useRef(null);
 
   const { data: sessionData, isLoading: loadingSession, refetch } = useSessionById(id);
 
@@ -38,7 +47,7 @@ function SessionPage() {
     isParticipant
   );
 
-  // find the problem data based on session problem title
+  // Find the problem data based on the session problem title.
   const problemData = session?.problem
     ? Object.values(PROBLEMS).find((p) => p.title === session.problem)
     : null;
@@ -46,24 +55,22 @@ function SessionPage() {
   const [selectedLanguage, setSelectedLanguage] = useState("javascript");
   const [code, setCode] = useState(problemData?.starterCode?.[selectedLanguage] || "");
 
-  // auto-join session if user is not already a participant and not the host
+  // Auto-join session if user is not already a participant and not the host.
   useEffect(() => {
     if (!session || !user || loadingSession) return;
     if (isHost || isParticipant) return;
 
     joinSessionMutation.mutate(id, { onSuccess: refetch });
-
-    // remove the joinSessionMutation, refetch from dependencies to avoid infinite loop
   }, [session, user, loadingSession, isHost, isParticipant, id]);
 
-  // redirect the "participant" when session ends
+  // Redirect the participant when session ends.
   useEffect(() => {
     if (!session || loadingSession) return;
 
     if (session.status === "completed") navigate("/dashboard");
   }, [session, loadingSession, navigate]);
 
-  // update code when problem loads or changes
+  // Update starter code when problem or language changes.
   useEffect(() => {
     if (problemData?.starterCode?.[selectedLanguage]) {
       setCode(problemData.starterCode[selectedLanguage]);
@@ -73,7 +80,7 @@ function SessionPage() {
   const handleLanguageChange = (e) => {
     const newLang = e.target.value;
     setSelectedLanguage(newLang);
-    // use problem-specific starter code
+
     const starterCode = problemData?.starterCode?.[newLang] || "";
     setCode(starterCode);
     setOutput(null);
@@ -90,172 +97,192 @@ function SessionPage() {
 
   const handleEndSession = () => {
     if (confirm("Are you sure you want to end this session? All participants will be notified.")) {
-      // this will navigate the HOST to dashboard
       endSessionMutation.mutate(id, { onSuccess: () => navigate("/dashboard") });
     }
   };
+
+  const toggleQuestionPanel = () => {
+    if (!questionPanelRef.current) return;
+
+    if (isQuestionCollapsed) {
+      questionPanelRef.current.expand();
+      return;
+    }
+
+    questionPanelRef.current.collapse();
+  };
+
+  const difficulty = typeof session?.difficulty === "string" ? session.difficulty : "easy";
+  const difficultyLabel = `${difficulty.charAt(0).toUpperCase()}${difficulty.slice(1)}`;
 
   return (
     <div className="h-screen bg-base-100 flex flex-col">
       <Navbar />
 
-      <div className="flex-1">
-        <PanelGroup direction="horizontal">
-          {/* LEFT PANEL - CODE EDITOR & PROBLEM DETAILS */}
-          <Panel defaultSize={50} minSize={30}>
-            <PanelGroup direction="vertical">
-              {/* PROBLEM DSC PANEL */}
-              <Panel defaultSize={50} minSize={20}>
-                <div className="h-full overflow-y-auto bg-base-200">
-                  {/* HEADER SECTION */}
-                  <div className="p-6 bg-base-100 border-b border-base-300">
-                    <div className="flex items-start justify-between mb-3">
-                      <div>
-                        <h1 className="text-3xl font-bold text-base-content">
-                          {session?.problem || "Loading..."}
-                        </h1>
-                        {problemData?.category && (
-                          <p className="text-base-content/60 mt-1">{problemData.category}</p>
-                        )}
-                        <p className="text-base-content/60 mt-2">
-                          Host: {session?.host?.name || "Loading..."} •{" "}
-                          {session?.participant ? 2 : 1}/2 participants
-                        </p>
-                      </div>
-
-                      <div className="flex items-center gap-3">
-                        <span
-                          className={`badge badge-lg ${getDifficultyBadgeClass(
-                            session?.difficulty
-                          )}`}
-                        >
-                          {session?.difficulty.slice(0, 1).toUpperCase() +
-                            session?.difficulty.slice(1) || "Easy"}
-                        </span>
-                        {isHost && session?.status === "active" && (
-                          <button
-                            onClick={handleEndSession}
-                            disabled={endSessionMutation.isPending}
-                            className="btn btn-error btn-sm gap-2"
-                          >
-                            {endSessionMutation.isPending ? (
-                              <Loader2Icon className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <LogOutIcon className="w-4 h-4" />
-                            )}
-                            End Session
-                          </button>
-                        )}
-                        {session?.status === "completed" && (
-                          <span className="badge badge-ghost badge-lg">Completed</span>
-                        )}
-                      </div>
-                    </div>
+      <div className="flex-1 min-h-0">
+        <PanelGroup direction="horizontal" className="h-full">
+          {/* LEFT PANEL - QUESTION (COLLAPSIBLE) */}
+          <Panel
+            ref={questionPanelRef}
+            defaultSize={28}
+            minSize={20}
+            collapsible
+            collapsedSize={0}
+            onCollapse={() => setIsQuestionCollapsed(true)}
+            onExpand={() => setIsQuestionCollapsed(false)}
+            className="min-w-0"
+          >
+            <div className="h-full overflow-y-auto bg-base-200 border-r border-base-300">
+              <div className="p-5 bg-base-100 border-b border-base-300">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h1 className="text-3xl font-bold text-base-content">
+                      {session?.problem || "Loading..."}
+                    </h1>
+                    {problemData?.category && (
+                      <p className="text-base-content/60 mt-1">{problemData.category}</p>
+                    )}
+                    <p className="text-base-content/60 mt-2">
+                      Host: {session?.host?.name || "Loading..."} | {session?.participant ? 2 : 1}/2
+                      participants
+                    </p>
                   </div>
 
-                  <div className="p-6 space-y-6">
-                    {/* problem desc */}
-                    {problemData?.description && (
-                      <div className="bg-base-100 rounded-xl shadow-sm p-5 border border-base-300">
-                        <h2 className="text-xl font-bold mb-4 text-base-content">Description</h2>
-                        <div className="space-y-3 text-base leading-relaxed">
-                          <p className="text-base-content/90">{problemData.description.text}</p>
-                          {problemData.description.notes?.map((note, idx) => (
-                            <p key={idx} className="text-base-content/90">
-                              {note}
-                            </p>
-                          ))}
-                        </div>
-                      </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className={`badge badge-lg ${getDifficultyBadgeClass(difficulty)}`}>
+                      {difficultyLabel}
+                    </span>
+                    {isHost && session?.status === "active" && (
+                      <button
+                        onClick={handleEndSession}
+                        disabled={endSessionMutation.isPending}
+                        className="btn btn-error btn-sm gap-2"
+                      >
+                        {endSessionMutation.isPending ? (
+                          <Loader2Icon className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <LogOutIcon className="w-4 h-4" />
+                        )}
+                        End Session
+                      </button>
                     )}
-
-                    {/* examples section */}
-                    {problemData?.examples && problemData.examples.length > 0 && (
-                      <div className="bg-base-100 rounded-xl shadow-sm p-5 border border-base-300">
-                        <h2 className="text-xl font-bold mb-4 text-base-content">Examples</h2>
-
-                        <div className="space-y-4">
-                          {problemData.examples.map((example, idx) => (
-                            <div key={idx}>
-                              <div className="flex items-center gap-2 mb-2">
-                                <span className="badge badge-sm">{idx + 1}</span>
-                                <p className="font-semibold text-base-content">Example {idx + 1}</p>
-                              </div>
-                              <div className="bg-base-200 rounded-lg p-4 font-mono text-sm space-y-1.5">
-                                <div className="flex gap-2">
-                                  <span className="text-primary font-bold min-w-[70px]">
-                                    Input:
-                                  </span>
-                                  <span>{example.input}</span>
-                                </div>
-                                <div className="flex gap-2">
-                                  <span className="text-secondary font-bold min-w-[70px]">
-                                    Output:
-                                  </span>
-                                  <span>{example.output}</span>
-                                </div>
-                                {example.explanation && (
-                                  <div className="pt-2 border-t border-base-300 mt-2">
-                                    <span className="text-base-content/60 font-sans text-xs">
-                                      <span className="font-semibold">Explanation:</span>{" "}
-                                      {example.explanation}
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Constraints */}
-                    {problemData?.constraints && problemData.constraints.length > 0 && (
-                      <div className="bg-base-100 rounded-xl shadow-sm p-5 border border-base-300">
-                        <h2 className="text-xl font-bold mb-4 text-base-content">Constraints</h2>
-                        <ul className="space-y-2 text-base-content/90">
-                          {problemData.constraints.map((constraint, idx) => (
-                            <li key={idx} className="flex gap-2">
-                              <span className="text-primary">•</span>
-                              <code className="text-sm">{constraint}</code>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
+                    {session?.status === "completed" && (
+                      <span className="badge badge-ghost badge-lg">Completed</span>
                     )}
                   </div>
                 </div>
+              </div>
+
+              <div className="p-5 space-y-5">
+                {problemData?.description && (
+                  <div className="bg-base-100 rounded-xl shadow-sm p-5 border border-base-300">
+                    <h2 className="text-xl font-bold mb-4 text-base-content">Description</h2>
+                    <div className="space-y-3 text-base leading-relaxed">
+                      <p className="text-base-content/90">{problemData.description.text}</p>
+                      {problemData.description.notes?.map((note, idx) => (
+                        <p key={idx} className="text-base-content/90">
+                          {note}
+                        </p>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {problemData?.examples && problemData.examples.length > 0 && (
+                  <div className="bg-base-100 rounded-xl shadow-sm p-5 border border-base-300">
+                    <h2 className="text-xl font-bold mb-4 text-base-content">Examples</h2>
+                    <div className="space-y-4">
+                      {problemData.examples.map((example, idx) => (
+                        <div key={idx}>
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="badge badge-sm">{idx + 1}</span>
+                            <p className="font-semibold text-base-content">Example {idx + 1}</p>
+                          </div>
+                          <div className="bg-base-200 rounded-lg p-4 font-mono text-sm space-y-1.5">
+                            <div className="flex gap-2">
+                              <span className="text-primary font-bold min-w-[70px]">Input:</span>
+                              <span>{example.input}</span>
+                            </div>
+                            <div className="flex gap-2">
+                              <span className="text-secondary font-bold min-w-[70px]">Output:</span>
+                              <span>{example.output}</span>
+                            </div>
+                            {example.explanation && (
+                              <div className="pt-2 border-t border-base-300 mt-2">
+                                <span className="text-base-content/60 font-sans text-xs">
+                                  <span className="font-semibold">Explanation:</span>{" "}
+                                  {example.explanation}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {problemData?.constraints && problemData.constraints.length > 0 && (
+                  <div className="bg-base-100 rounded-xl shadow-sm p-5 border border-base-300">
+                    <h2 className="text-xl font-bold mb-4 text-base-content">Constraints</h2>
+                    <ul className="space-y-2 text-base-content/90">
+                      {problemData.constraints.map((constraint, idx) => (
+                        <li key={idx} className="flex gap-2">
+                          <span className="text-primary">*</span>
+                          <code className="text-sm">{constraint}</code>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
+          </Panel>
+
+          <PanelResizeHandle className="w-1.5 bg-base-300/80 hover:bg-primary transition-colors cursor-col-resize" />
+
+          {/* MIDDLE PANEL - CODE */}
+          <Panel defaultSize={42} minSize={30} className="min-w-0">
+            <PanelGroup direction="vertical" className="h-full bg-base-100">
+              <Panel defaultSize={74} minSize={35}>
+                <div className="h-full min-h-0 relative">
+                  <button
+                    type="button"
+                    onClick={toggleQuestionPanel}
+                    className="absolute left-2 top-2 z-20 btn btn-xs btn-circle btn-ghost border border-base-300"
+                    aria-label={isQuestionCollapsed ? "Open question panel" : "Collapse question panel"}
+                    title={isQuestionCollapsed ? "Open Question Panel" : "Collapse Question Panel"}
+                  >
+                    {isQuestionCollapsed ? (
+                      <ChevronRightIcon className="w-4 h-4" />
+                    ) : (
+                      <ChevronLeftIcon className="w-4 h-4" />
+                    )}
+                  </button>
+
+                  <CodeEditorPanel
+                    selectedLanguage={selectedLanguage}
+                    code={code}
+                    isRunning={isRunning}
+                    onLanguageChange={handleLanguageChange}
+                    onCodeChange={(value) => setCode(value)}
+                    onRunCode={handleRunCode}
+                  />
+                </div>
               </Panel>
 
-              <PanelResizeHandle className="h-2 bg-base-300 hover:bg-primary transition-colors cursor-row-resize" />
+              <PanelResizeHandle className="h-1.5 bg-base-300/80 hover:bg-primary transition-colors cursor-row-resize" />
 
-              <Panel defaultSize={50} minSize={20}>
-                <PanelGroup direction="vertical">
-                  <Panel defaultSize={70} minSize={30}>
-                    <CodeEditorPanel
-                      selectedLanguage={selectedLanguage}
-                      code={code}
-                      isRunning={isRunning}
-                      onLanguageChange={handleLanguageChange}
-                      onCodeChange={(value) => setCode(value)}
-                      onRunCode={handleRunCode}
-                    />
-                  </Panel>
-
-                  <PanelResizeHandle className="h-2 bg-base-300 hover:bg-primary transition-colors cursor-row-resize" />
-
-                  <Panel defaultSize={30} minSize={15}>
-                    <OutputPanel output={output} />
-                  </Panel>
-                </PanelGroup>
+              <Panel defaultSize={26} minSize={15}>
+                <OutputPanel output={output} />
               </Panel>
             </PanelGroup>
           </Panel>
 
-          <PanelResizeHandle className="w-2 bg-base-300 hover:bg-primary transition-colors cursor-col-resize" />
+          <PanelResizeHandle className="w-1.5 bg-base-300/80 hover:bg-primary transition-colors cursor-col-resize" />
 
-          {/* RIGHT PANEL - VIDEO CALLS & CHAT */}
-          <Panel defaultSize={50} minSize={30}>
+          {/* RIGHT PANEL - VIDEO CALL */}
+          <Panel defaultSize={30} minSize={24} className="min-w-0">
             <div className="h-full bg-base-200 p-4 overflow-auto">
               {isInitializingCall ? (
                 <div className="h-full flex items-center justify-center">
