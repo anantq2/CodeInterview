@@ -16,12 +16,46 @@ const app = express();
 
 const __dirname = path.resolve();
 
+const normalizeOrigin = (origin) => {
+  if (!origin || typeof origin !== "string") return "";
+  return origin.trim().replace(/\/$/, "");
+};
+
+const configuredOrigins = [ENV.CLIENT_URL, ENV.CLIENT_URLS]
+  .filter(Boolean)
+  .flatMap((value) => value.split(","))
+  .map(normalizeOrigin)
+  .filter(Boolean);
+
+const allowVercelPreviews = ENV.ALLOW_VERCEL_PREVIEWS === "true";
+
+const isVercelPreviewOrigin = (origin) =>
+  /^https:\/\/codeinterview-[a-z0-9-]+\.vercel\.app$/i.test(origin);
+
+const isAllowedOrigin = (origin) => {
+  const normalizedOrigin = normalizeOrigin(origin);
+  return (
+    configuredOrigins.includes(normalizedOrigin) ||
+    (allowVercelPreviews && isVercelPreviewOrigin(normalizedOrigin))
+  );
+};
+
 // middleware
 app.use(express.json());
 // credentials:true meaning?? => server allows a browser to include cookies on request
-// allow trailing slash or no trailing slash
-const clientUrl = ENV.CLIENT_URL.endsWith("/") ? ENV.CLIENT_URL.slice(0, -1) : ENV.CLIENT_URL;
-app.use(cors({ origin: clientUrl, credentials: true }));
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow non-browser requests (no Origin header)
+      if (!origin) return callback(null, true);
+
+      if (isAllowedOrigin(origin)) return callback(null, true);
+
+      return callback(new Error(`CORS blocked origin: ${origin}`));
+    },
+    credentials: true,
+  })
+);
 app.use(clerkMiddleware()); // this adds auth field to request object: req.auth()
 
 app.use("/api/inngest", serve({ client: inngest, functions }));
@@ -34,7 +68,8 @@ app.get("/health", (req, res) => {
 });
 
 // make our app ready for deployment
-console.log("Allowed CORS Origin:", ENV.CLIENT_URL);
+console.log("Allowed CORS Origins:", configuredOrigins);
+console.log("Allow Vercel Preview Origins:", allowVercelPreviews);
 
 // Always respond to root with API status
 app.get("/", (req, res) => {
