@@ -182,14 +182,6 @@ function HomePage() {
                 </motion.button>
               </SignInButton>
 
-              <motion.button
-                whileHover={{ scale: 1.04 }}
-                whileTap={{ scale: 0.97 }}
-                className="px-8 py-3.5 rounded-xl font-bold border-2 border-base-content/15 text-base-content/80 hover:border-primary/40 hover:text-primary transition-colors duration-300 flex items-center gap-2.5"
-              >
-                <VideoIcon className="size-5" />
-                Watch Demo
-              </motion.button>
             </motion.div>
 
             {/* STATS */}
