@@ -9,12 +9,15 @@ function CodeEditorPanel({
   onLanguageChange,
   onCodeChange,
   onRunCode,
+  leftHeaderAction,
 }) {
   return (
     <div className="h-full flex flex-col bg-base-100">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2.5 border-b border-base-content/5 bg-gradient-to-r from-base-100 to-base-200/50">
         <div className="flex items-center gap-3">
+          {leftHeaderAction ? <div className="shrink-0">{leftHeaderAction}</div> : null}
+
           {/* Language dots */}
           <div className="flex gap-1.5">
             <div className="size-3 rounded-full bg-error/70" />

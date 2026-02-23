@@ -30,6 +30,8 @@ function SessionPage() {
   const [isRunning, setIsRunning] = useState(false);
   const [isQuestionCollapsed, setIsQuestionCollapsed] = useState(false);
   const questionPanelRef = useRef(null);
+  const editorPanelRef = useRef(null);
+  const outputPanelRef = useRef(null);
 
   const { data: sessionData, isLoading: loadingSession, refetch } = useSessionById(id);
 
@@ -87,6 +89,11 @@ function SessionPage() {
   };
 
   const handleRunCode = async () => {
+    // Bring output panel up on every run so result is immediately visible.
+    const targetOutputSize = 40;
+    outputPanelRef.current?.resize?.(targetOutputSize);
+    editorPanelRef.current?.resize?.(100 - targetOutputSize);
+
     setIsRunning(true);
     setOutput(null);
 
@@ -119,8 +126,9 @@ function SessionPage() {
     <div className="h-screen bg-base-100 flex flex-col">
       <Navbar />
 
-      <div className="flex-1 min-h-0">
-        <PanelGroup direction="horizontal" className="h-full">
+      <div className="flex-1 min-h-0 flex">
+        <div className="flex-1 min-h-0 min-w-0">
+          <PanelGroup direction="horizontal" className="h-full">
           {/* LEFT PANEL - QUESTION (COLLAPSIBLE) */}
           <Panel
             ref={questionPanelRef}
@@ -244,22 +252,8 @@ function SessionPage() {
           {/* MIDDLE PANEL - CODE */}
           <Panel defaultSize={42} minSize={30} className="min-w-0">
             <PanelGroup direction="vertical" className="h-full bg-base-100">
-              <Panel defaultSize={74} minSize={35}>
-                <div className="h-full min-h-0 relative">
-                  <button
-                    type="button"
-                    onClick={toggleQuestionPanel}
-                    className="absolute left-2 top-2 z-20 btn btn-xs btn-circle btn-ghost border border-base-300"
-                    aria-label={isQuestionCollapsed ? "Open question panel" : "Collapse question panel"}
-                    title={isQuestionCollapsed ? "Open Question Panel" : "Collapse Question Panel"}
-                  >
-                    {isQuestionCollapsed ? (
-                      <ChevronRightIcon className="w-4 h-4" />
-                    ) : (
-                      <ChevronLeftIcon className="w-4 h-4" />
-                    )}
-                  </button>
-
+              <Panel ref={editorPanelRef} defaultSize={74} minSize={35}>
+                <div className="h-full min-h-0">
                   <CodeEditorPanel
                     selectedLanguage={selectedLanguage}
                     code={code}
@@ -267,54 +261,76 @@ function SessionPage() {
                     onLanguageChange={handleLanguageChange}
                     onCodeChange={(value) => setCode(value)}
                     onRunCode={handleRunCode}
+                    leftHeaderAction={
+                      <button
+                        type="button"
+                        onClick={toggleQuestionPanel}
+                        className={`btn btn-sm rounded-full px-3 border ${
+                          isQuestionCollapsed
+                            ? "bg-primary text-primary-content border-primary/40 hover:bg-primary/90"
+                            : "bg-base-100/95 text-base-content border-base-300 hover:bg-base-200"
+                        }`}
+                        aria-label={
+                          isQuestionCollapsed ? "Open question panel" : "Collapse question panel"
+                        }
+                        title={isQuestionCollapsed ? "Open Question Panel" : "Collapse Question Panel"}
+                      >
+                        {isQuestionCollapsed ? (
+                          <ChevronRightIcon className="w-4 h-4" />
+                        ) : (
+                          <ChevronLeftIcon className="w-4 h-4" />
+                        )}
+                        <span className="text-xs font-semibold">
+                          {isQuestionCollapsed ? "Questions" : "Hide"}
+                        </span>
+                      </button>
+                    }
                   />
                 </div>
               </Panel>
 
               <PanelResizeHandle className="h-1.5 bg-base-300/80 hover:bg-primary transition-colors cursor-row-resize" />
 
-              <Panel defaultSize={26} minSize={15}>
+              <Panel ref={outputPanelRef} defaultSize={26} minSize={15}>
                 <OutputPanel output={output} />
               </Panel>
             </PanelGroup>
           </Panel>
 
-          <PanelResizeHandle className="w-1.5 bg-base-300/80 hover:bg-primary transition-colors cursor-col-resize" />
+          </PanelGroup>
+        </div>
 
-          {/* RIGHT PANEL - VIDEO CALL */}
-          <Panel defaultSize={30} minSize={24} className="min-w-0">
-            <div className="h-full bg-base-200 p-4 overflow-auto">
-              {isInitializingCall ? (
-                <div className="h-full flex items-center justify-center">
-                  <div className="text-center">
-                    <Loader2Icon className="w-12 h-12 mx-auto animate-spin text-primary mb-4" />
-                    <p className="text-lg">Connecting to video call...</p>
-                  </div>
-                </div>
-              ) : !streamClient || !call ? (
-                <div className="h-full flex items-center justify-center">
-                  <div className="card bg-base-100 shadow-xl max-w-md">
-                    <div className="card-body items-center text-center">
-                      <div className="w-24 h-24 bg-error/10 rounded-full flex items-center justify-center mb-4">
-                        <PhoneOffIcon className="w-12 h-12 text-error" />
-                      </div>
-                      <h2 className="card-title text-2xl">Connection Failed</h2>
-                      <p className="text-base-content/70">Unable to connect to the video call</p>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="h-full">
-                  <StreamVideo client={streamClient}>
-                    <StreamCall call={call}>
-                      <VideoCallUI chatClient={chatClient} channel={channel} />
-                    </StreamCall>
-                  </StreamVideo>
-                </div>
-              )}
+        {/* RIGHT PANEL - VIDEO CALL (FIXED WIDTH) */}
+        <div className="w-[360px] min-w-[360px] max-w-[360px] h-full bg-base-200 border-l border-base-300 p-4 overflow-hidden">
+          {isInitializingCall ? (
+            <div className="h-full flex items-center justify-center">
+              <div className="text-center">
+                <Loader2Icon className="w-12 h-12 mx-auto animate-spin text-primary mb-4" />
+                <p className="text-lg">Connecting to video call...</p>
+              </div>
             </div>
-          </Panel>
-        </PanelGroup>
+          ) : !streamClient || !call ? (
+            <div className="h-full flex items-center justify-center">
+              <div className="card bg-base-100 shadow-xl max-w-md">
+                <div className="card-body items-center text-center">
+                  <div className="w-24 h-24 bg-error/10 rounded-full flex items-center justify-center mb-4">
+                    <PhoneOffIcon className="w-12 h-12 text-error" />
+                  </div>
+                  <h2 className="card-title text-2xl">Connection Failed</h2>
+                  <p className="text-base-content/70">Unable to connect to the video call</p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="h-full">
+              <StreamVideo client={streamClient}>
+                <StreamCall call={call}>
+                  <VideoCallUI chatClient={chatClient} channel={channel} />
+                </StreamCall>
+              </StreamVideo>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
