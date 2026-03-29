@@ -5,14 +5,8 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// dotenv v17 — explicitly load and assign to process.env
-const result = dotenv.config({ path: path.resolve(__dirname, "../../.env") });
-
-if (result.parsed) {
-  for (const [key, value] of Object.entries(result.parsed)) {
-    process.env[key] = value;
-  }
-}
+// dotenv v17 — load .env file (won't override existing env vars from platform like Render/Railway)
+dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 
 export const ENV = {
   PORT: process.env.PORT,
