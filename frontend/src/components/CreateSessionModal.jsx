@@ -1,6 +1,6 @@
 import { PROBLEMS } from "../data/problems";
 import { getDifficultyBadgeClass } from "../lib/utils";
-import { PlusIcon, XIcon, Code2Icon, UsersIcon } from "lucide-react";
+import { PlusIcon, XIcon, Code2Icon, UsersIcon, LockIcon, GlobeIcon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 function CreateSessionModal({
@@ -67,10 +67,11 @@ function CreateSessionModal({
                       const problem = Object.values(PROBLEMS).find(
                         (p) => p.title === e.target.value
                       );
-                      setRoomConfig({
+                      setRoomConfig((prev) => ({
+                        ...prev,
                         problem: e.target.value,
                         difficulty: problem?.difficulty || "",
-                      });
+                      }));
                     }}
                   >
                     <option value="" className="bg-base-200 text-base-content">Choose a problem...</option>
@@ -80,6 +81,45 @@ function CreateSessionModal({
                       </option>
                     ))}
                   </select>
+                </div>
+
+                {/* Public / Private Toggle */}
+                <div>
+                  <label className="text-sm font-semibold text-base-content/70 mb-3 block">
+                    Session Visibility
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setRoomConfig((prev) => ({ ...prev, isPrivate: false }))}
+                      className={`flex items-center gap-2.5 px-4 py-3 rounded-xl border-2 transition-all duration-200 ${
+                        !roomConfig.isPrivate
+                          ? "border-primary bg-primary/10 text-primary shadow-sm"
+                          : "border-base-content/8 hover:border-base-content/15 text-base-content/60"
+                      }`}
+                    >
+                      <GlobeIcon className="size-4" />
+                      <div className="text-left">
+                        <p className="text-sm font-bold">Public</p>
+                        <p className="text-[10px] opacity-70">Anyone can join</p>
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRoomConfig((prev) => ({ ...prev, isPrivate: true }))}
+                      className={`flex items-center gap-2.5 px-4 py-3 rounded-xl border-2 transition-all duration-200 ${
+                        roomConfig.isPrivate
+                          ? "border-warning bg-warning/10 text-warning shadow-sm"
+                          : "border-base-content/8 hover:border-base-content/15 text-base-content/60"
+                      }`}
+                    >
+                      <LockIcon className="size-4" />
+                      <div className="text-left">
+                        <p className="text-sm font-bold">Private</p>
+                        <p className="text-[10px] opacity-70">Invite code only</p>
+                      </div>
+                    </button>
+                  </div>
                 </div>
 
                 {/* Room Summary */}
@@ -94,6 +134,19 @@ function CreateSessionModal({
                       <div className="flex items-center gap-2.5">
                         <Code2Icon className="size-4 text-primary" />
                         <span className="text-sm font-medium">Problem: {selectedProblem.title}</span>
+                      </div>
+                      <div className="flex items-center gap-2.5">
+                        {roomConfig.isPrivate ? (
+                          <>
+                            <LockIcon className="size-4 text-warning" />
+                            <span className="text-sm font-medium">Private — invite code will be generated</span>
+                          </>
+                        ) : (
+                          <>
+                            <GlobeIcon className="size-4 text-success" />
+                            <span className="text-sm font-medium">Public — visible to everyone</span>
+                          </>
+                        )}
                       </div>
                       <div className="flex items-center gap-2.5">
                         <UsersIcon className="size-4 text-secondary" />

@@ -26,6 +26,15 @@ const sessionSchema = new mongoose.Schema(
       enum: ["active", "completed"],
       default: "active",
     },
+    isPrivate: {
+      type: Boolean,
+      default: false,
+    },
+    inviteCode: {
+      type: String,
+      default: "",
+      index: true,
+    },
     // stream video call ID
     callId: {
       type: String,

@@ -1,9 +1,10 @@
+import crypto from "crypto";
 import { chatClient, streamClient } from "../lib/stream.js";
 import Session from "../models/Session.js";
 
 export async function createSession(req, res) {
   try {
-    const { problem, difficulty } = req.body;
+    const { problem, difficulty, isPrivate } = req.body;
     const userId = req.user._id;
     const clerkId = req.user.clerkId;
 
@@ -14,8 +15,18 @@ export async function createSession(req, res) {
     // generate a unique call id for stream video
     const callId = `session_${Date.now()}_${Math.random().toString(36).substring(7)}`;
 
+    // generate invite code for private sessions
+    const inviteCode = isPrivate ? crypto.randomBytes(4).toString("hex") : "";
+
     // create session in db
-    const session = await Session.create({ problem, difficulty, host: userId, callId });
+    const session = await Session.create({
+      problem,
+      difficulty,
+      host: userId,
+      callId,
+      isPrivate: !!isPrivate,
+      inviteCode,
+    });
 
     // create stream video call
     await streamClient.video.call("default", callId).getOrCreate({
@@ -43,7 +54,8 @@ export async function createSession(req, res) {
 
 export async function getActiveSessions(_, res) {
   try {
-    const sessions = await Session.find({ status: "active" })
+    // only return public active sessions — private ones are join-by-invite only
+    const sessions = await Session.find({ status: "active", isPrivate: { $ne: true } })
       .populate("host", "name profileImage email clerkId")
       .populate("participant", "name profileImage email clerkId")
       .sort({ createdAt: -1 })
@@ -78,12 +90,22 @@ export async function getMyRecentSessions(req, res) {
 export async function getSessionById(req, res) {
   try {
     const { id } = req.params;
+    const userId = req.user._id;
 
     const session = await Session.findById(id)
       .populate("host", "name email profileImage clerkId")
       .populate("participant", "name email profileImage clerkId");
 
     if (!session) return res.status(404).json({ message: "Session not found" });
+
+    // for private sessions, only host or participant can view
+    if (session.isPrivate) {
+      const isHost = session.host._id.toString() === userId.toString();
+      const isParticipant = session.participant?._id?.toString() === userId.toString();
+      if (!isHost && !isParticipant) {
+        return res.status(403).json({ message: "This is a private session. Use the invite code to join." });
+      }
+    }
 
     res.status(200).json({ session });
   } catch (error) {
@@ -110,6 +132,14 @@ export async function joinSession(req, res) {
       return res.status(400).json({ message: "Host cannot join their own session as participant" });
     }
 
+    // for private sessions, require invite code
+    if (session.isPrivate) {
+      const { inviteCode } = req.body;
+      if (!inviteCode || inviteCode !== session.inviteCode) {
+        return res.status(403).json({ message: "Invalid invite code" });
+      }
+    }
+
     // check if session is already full - has a participant
     if (session.participant) return res.status(409).json({ message: "Session is full" });
 
@@ -122,6 +152,47 @@ export async function joinSession(req, res) {
     res.status(200).json({ session });
   } catch (error) {
     console.log("Error in joinSession controller:", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+}
+
+// join a session using invite code (for private sessions)
+export async function joinByInviteCode(req, res) {
+  try {
+    const { inviteCode } = req.params;
+    const userId = req.user._id;
+    const clerkId = req.user.clerkId;
+
+    const session = await Session.findOne({ inviteCode, isPrivate: true });
+
+    if (!session) return res.status(404).json({ message: "Invalid invite code" });
+
+    if (session.status !== "active") {
+      return res.status(400).json({ message: "This session has already ended" });
+    }
+
+    if (session.host.toString() === userId.toString()) {
+      // host is re-opening their own session — just redirect
+      return res.status(200).json({ session, alreadyIn: true });
+    }
+
+    if (session.participant) {
+      // if current user is already the participant, let them rejoin
+      if (session.participant.toString() === userId.toString()) {
+        return res.status(200).json({ session, alreadyIn: true });
+      }
+      return res.status(409).json({ message: "Session is full" });
+    }
+
+    session.participant = userId;
+    await session.save();
+
+    const channel = chatClient.channel("messaging", session.callId);
+    await channel.addMembers([clerkId]);
+
+    res.status(200).json({ session });
+  } catch (error) {
+    console.log("Error in joinByInviteCode controller:", error.message);
     res.status(500).json({ message: "Internal Server Error" });
   }
 }

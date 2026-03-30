@@ -1,8 +1,8 @@
 import { useUser } from "@clerk/clerk-react";
-import { ArrowRightIcon, SparklesIcon, ZapIcon } from "lucide-react";
+import { ArrowRightIcon, KeyRoundIcon, SparklesIcon, ZapIcon } from "lucide-react";
 import { motion } from "framer-motion";
 
-function WelcomeSection({ onCreateSession }) {
+function WelcomeSection({ onCreateSession, onJoinByCode }) {
   const { user } = useUser();
 
   return (
@@ -31,21 +31,37 @@ function WelcomeSection({ onCreateSession }) {
             </p>
           </motion.div>
 
-          <motion.button
+          <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
-            whileHover={{ scale: 1.04 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={onCreateSession}
-            className="group px-7 py-3.5 bg-gradient-to-r from-primary to-secondary rounded-2xl shadow-xl shadow-primary/20 hover:shadow-2xl hover:shadow-primary/30 transition-shadow duration-300"
+            className="flex items-center gap-3"
           >
-            <div className="flex items-center gap-2.5 text-white font-bold text-base">
-              <ZapIcon className="size-5" />
-              <span>Create Session</span>
-              <ArrowRightIcon className="size-4 group-hover:translate-x-1 transition-transform duration-200" />
-            </div>
-          </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={onJoinByCode}
+              className="group px-5 py-3.5 bg-base-content/5 hover:bg-base-content/10 border border-base-content/10 rounded-2xl transition-all duration-300"
+            >
+              <div className="flex items-center gap-2 text-base-content font-bold text-sm">
+                <KeyRoundIcon className="size-4" />
+                <span>Join by Code</span>
+              </div>
+            </motion.button>
+
+            <motion.button
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={onCreateSession}
+              className="group px-7 py-3.5 bg-gradient-to-r from-primary to-secondary rounded-2xl shadow-xl shadow-primary/20 hover:shadow-2xl hover:shadow-primary/30 transition-shadow duration-300"
+            >
+              <div className="flex items-center gap-2.5 text-white font-bold text-base">
+                <ZapIcon className="size-5" />
+                <span>Create Session</span>
+                <ArrowRightIcon className="size-4 group-hover:translate-x-1 transition-transform duration-200" />
+              </div>
+            </motion.button>
+          </motion.div>
         </div>
       </div>
     </div>
@@ -53,3 +69,4 @@ function WelcomeSection({ onCreateSession }) {
 }
 
 export default WelcomeSection;
+

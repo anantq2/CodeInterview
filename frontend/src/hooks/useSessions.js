@@ -63,3 +63,13 @@ export const useEndSession = () => {
 
   return result;
 };
+
+export const useJoinByInviteCode = () => {
+  const result = useMutation({
+    mutationKey: ["joinByInviteCode"],
+    mutationFn: sessionApi.joinByInviteCode,
+    onError: (error) => toast.error(error.response?.data?.message || "Invalid invite code"),
+  });
+
+  return result;
+};

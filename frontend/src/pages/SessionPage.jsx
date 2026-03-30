@@ -10,9 +10,13 @@ import { getDifficultyBadgeClass } from "../lib/utils";
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
+  CopyIcon,
+  CheckIcon,
   Loader2Icon,
+  LockIcon,
   LogOutIcon,
   PhoneOffIcon,
+  Share2Icon,
 } from "lucide-react";
 import CodeEditorPanel from "../components/CodeEditorPanel";
 import OutputPanel from "../components/OutputPanel";
@@ -32,6 +36,8 @@ function SessionPage() {
   const questionPanelRef = useRef(null);
   const editorPanelRef = useRef(null);
   const outputPanelRef = useRef(null);
+  const [copiedCode, setCopiedCode] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
 
   const { data: sessionData, isLoading: loadingSession, refetch } = useSessionById(id);
 
@@ -58,9 +64,11 @@ function SessionPage() {
   const [code, setCode] = useState(problemData?.starterCode?.[selectedLanguage] || "");
 
   // Auto-join session if user is not already a participant and not the host.
+  // Skip auto-join for private sessions — they require an invite code.
   useEffect(() => {
     if (!session || !user || loadingSession) return;
     if (isHost || isParticipant) return;
+    if (session.isPrivate) return; // private sessions need invite code
 
     joinSessionMutation.mutate(id, { onSuccess: refetch });
   }, [session, user, loadingSession, isHost, isParticipant, id]);
@@ -142,43 +150,81 @@ function SessionPage() {
           >
             <div className="h-full overflow-y-auto bg-base-200 border-r border-base-300">
               <div className="p-5 bg-base-100 border-b border-base-300">
+                {/* Title + badges row */}
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <h1 className="text-3xl font-bold text-base-content">
-                      {session?.problem || "Loading..."}
-                    </h1>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h1 className="text-2xl font-bold text-base-content">
+                        {session?.problem || "Loading..."}
+                      </h1>
+                      <span className={`badge badge-sm ${getDifficultyBadgeClass(difficulty)}`}>
+                        {difficultyLabel}
+                      </span>
+                      {session?.isPrivate && (
+                        <span className="badge badge-warning badge-sm gap-0.5">
+                          <LockIcon className="size-2.5" />
+                          Private
+                        </span>
+                      )}
+                    </div>
                     {problemData?.category && (
-                      <p className="text-base-content/60 mt-1">{problemData.category}</p>
+                      <p className="text-base-content/60 text-sm mt-1">{problemData.category}</p>
                     )}
-                    <p className="text-base-content/60 mt-2">
-                      Host: {session?.host?.name || "Loading..."} | {session?.participant ? 2 : 1}/2
-                      participants
+                    <p className="text-base-content/60 text-sm mt-1">
+                      Host: {session?.host?.name || "Loading..."} | {session?.participant ? 2 : 1}/2 participants
                     </p>
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0">
-                    <span className={`badge badge-lg ${getDifficultyBadgeClass(difficulty)}`}>
-                      {difficultyLabel}
-                    </span>
                     {isHost && session?.status === "active" && (
                       <button
                         onClick={handleEndSession}
                         disabled={endSessionMutation.isPending}
-                        className="btn btn-error btn-sm gap-2"
+                        className="btn btn-error btn-sm gap-1"
                       >
                         {endSessionMutation.isPending ? (
-                          <Loader2Icon className="w-4 h-4 animate-spin" />
+                          <Loader2Icon className="w-3.5 h-3.5 animate-spin" />
                         ) : (
-                          <LogOutIcon className="w-4 h-4" />
+                          <LogOutIcon className="w-3.5 h-3.5" />
                         )}
-                        End Session
+                        End
                       </button>
                     )}
                     {session?.status === "completed" && (
-                      <span className="badge badge-ghost badge-lg">Completed</span>
+                      <span className="badge badge-ghost badge-sm">Completed</span>
                     )}
                   </div>
                 </div>
+
+                {/* Share row — compact, below title */}
+                {isHost && session?.status === "active" && (
+                  <div className="flex items-center gap-2 mt-3 pt-3 border-t border-base-content/5">
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(window.location.href);
+                        setCopiedLink(true);
+                        setTimeout(() => setCopiedLink(false), 2000);
+                      }}
+                      className="btn btn-xs btn-outline btn-primary gap-1"
+                    >
+                      {copiedLink ? <CheckIcon className="size-3" /> : <Share2Icon className="size-3" />}
+                      {copiedLink ? "Copied!" : "Share Link"}
+                    </button>
+                    {session?.isPrivate && session?.inviteCode && (
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(session.inviteCode);
+                          setCopiedCode(true);
+                          setTimeout(() => setCopiedCode(false), 2000);
+                        }}
+                        className="btn btn-xs btn-outline btn-warning gap-1"
+                      >
+                        {copiedCode ? <CheckIcon className="size-3" /> : <CopyIcon className="size-3" />}
+                        {copiedCode ? "Copied!" : `Code: ${session.inviteCode}`}
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="p-5 space-y-5">
