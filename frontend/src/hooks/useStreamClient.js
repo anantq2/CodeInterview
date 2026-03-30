@@ -77,7 +77,7 @@ function useStreamClient(session, loadingSession, isHost, isParticipant) {
         }
       })();
     };
-  }, [session, loadingSession, isHost, isParticipant]);
+  }, [session?._id, session?.status, session?.callId, loadingSession, isHost, isParticipant]);
 
   return {
     streamClient,

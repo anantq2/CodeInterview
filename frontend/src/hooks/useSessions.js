@@ -36,7 +36,16 @@ export const useSessionById = (id) => {
     queryKey: ["session", id],
     queryFn: () => sessionApi.getSessionById(id),
     enabled: !!id,
-    refetchInterval: 5000, // refetch every 5 seconds to detect session status changes
+    refetchInterval: (query) => {
+      // Stop polling if we got a 403 (private session — user not authorized)
+      if (query.state.error?.response?.status === 403) return false;
+      return 5000;
+    },
+    retry: (failureCount, error) => {
+      // Don't retry on 403 (private session) — show invite code prompt immediately
+      if (error?.response?.status === 403) return false;
+      return failureCount < 3;
+    },
   });
 
   return result;

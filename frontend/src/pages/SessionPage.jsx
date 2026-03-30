@@ -3,8 +3,9 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { useEndSession, useJoinSession, useSessionById } from "../hooks/useSessions";
 import { PROBLEMS } from "../data/problems";
-import { executeCode } from "../lib/piston";
+import { executeCode } from "../lib/codeExecution";
 import Navbar from "../components/Navbar";
+import JoinByCodeModal from "../components/JoinByCodeModal";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { getDifficultyBadgeClass } from "../lib/utils";
 import {
@@ -17,6 +18,8 @@ import {
   LogOutIcon,
   PhoneOffIcon,
   Share2Icon,
+  ShieldAlertIcon,
+  KeyRoundIcon,
 } from "lucide-react";
 import CodeEditorPanel from "../components/CodeEditorPanel";
 import OutputPanel from "../components/OutputPanel";
@@ -38,8 +41,12 @@ function SessionPage() {
   const outputPanelRef = useRef(null);
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [showJoinModal, setShowJoinModal] = useState(false);
 
-  const { data: sessionData, isLoading: loadingSession, refetch } = useSessionById(id);
+  const { data: sessionData, isLoading: loadingSession, error: sessionError, refetch } = useSessionById(id);
+
+  // Detect 403 (private session, user not authorized yet)
+  const isPrivateError = sessionError?.response?.status === 403;
 
   const joinSessionMutation = useJoinSession();
   const endSessionMutation = useEndSession();
@@ -129,6 +136,46 @@ function SessionPage() {
 
   const difficulty = typeof session?.difficulty === "string" ? session.difficulty : "easy";
   const difficultyLabel = `${difficulty.charAt(0).toUpperCase()}${difficulty.slice(1)}`;
+
+  // If user hits a private session URL without being a participant, show invite code prompt
+  if (isPrivateError) {
+    return (
+      <div className="h-screen bg-base-100 flex flex-col">
+        <Navbar />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center max-w-md px-6">
+            <div className="size-20 bg-warning/10 rounded-full flex items-center justify-center mx-auto mb-6">
+              <ShieldAlertIcon className="size-10 text-warning" />
+            </div>
+            <h1 className="text-3xl font-bold text-base-content mb-3">Private Session</h1>
+            <p className="text-base-content/60 mb-8">
+              This session is private. Enter the invite code shared by the host to join.
+            </p>
+            <div className="flex items-center justify-center gap-3">
+              <button
+                onClick={() => setShowJoinModal(true)}
+                className="btn btn-warning gap-2"
+              >
+                <KeyRoundIcon className="size-4" />
+                Enter Invite Code
+              </button>
+              <button
+                onClick={() => navigate("/dashboard")}
+                className="btn btn-ghost"
+              >
+                Back to Dashboard
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <JoinByCodeModal
+          isOpen={showJoinModal}
+          onClose={() => setShowJoinModal(false)}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen bg-base-100 flex flex-col">
