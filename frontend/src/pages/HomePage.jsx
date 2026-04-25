@@ -274,7 +274,7 @@ function HomePage() {
       {/* FOOTER */}
       <footer className="border-t border-base-content/5 py-8">
         <div className="max-w-7xl mx-auto px-6 flex items-center justify-between text-xs text-base-content/40">
-          <span>© 2025 CodeInterview. Built for learners.</span>
+          <span>© 2026 CodeInterview. Built for learners.</span>
           <div className="flex gap-4">
             <span>Privacy</span>
             <span>Terms</span>
