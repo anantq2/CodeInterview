@@ -4,12 +4,12 @@ import toast from "react-hot-toast";
 import { initializeStreamClient, disconnectStreamClient } from "../lib/stream";
 import { sessionApi } from "../api/sessions";
 
-function useStreamClient(session, loadingSession, isHost, isParticipant) {
+function useStreamClient(session, loadingSession, isHost, isParticipant, joinVideo = false) {
   const [streamClient, setStreamClient] = useState(null);
   const [call, setCall] = useState(null);
   const [chatClient, setChatClient] = useState(null);
   const [channel, setChannel] = useState(null);
-  const [isInitializingCall, setIsInitializingCall] = useState(true);
+  const [isInitializingCall, setIsInitializingCall] = useState(false);
 
   useEffect(() => {
     let videoCall = null;
@@ -20,6 +20,7 @@ function useStreamClient(session, loadingSession, isHost, isParticipant) {
       if (!isHost && !isParticipant) return;
       if (session.status === "completed") return;
 
+      setIsInitializingCall(true);
       try {
         const { token, userId, userName, userImage } = await sessionApi.getStreamToken();
 
@@ -62,7 +63,7 @@ function useStreamClient(session, loadingSession, isHost, isParticipant) {
       }
     };
 
-    if (session && !loadingSession) initCall();
+    if (session && !loadingSession && joinVideo) initCall();
 
     // cleanup - performance reasons
     return () => {
@@ -77,7 +78,7 @@ function useStreamClient(session, loadingSession, isHost, isParticipant) {
         }
       })();
     };
-  }, [session?._id, session?.status, session?.callId, loadingSession, isHost, isParticipant]);
+  }, [session?._id, session?.status, session?.callId, loadingSession, isHost, isParticipant, joinVideo]);
 
   return {
     streamClient,

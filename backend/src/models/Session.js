@@ -40,6 +40,38 @@ const sessionSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+
+    // Problem identifier (slug like "two-sum") for full data lookup
+    problemId: {
+      type: String,
+      default: "",
+    },
+
+    // Code snapshots — saved periodically and on session end
+    codeSnapshots: [
+      {
+        userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        language: { type: String, required: true },
+        code: { type: String, required: true },
+        savedAt: { type: Date, default: Date.now },
+      },
+    ],
+
+    // Execution results history
+    executionResults: [
+      {
+        userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        language: String,
+        code: String,
+        output: String,
+        success: Boolean,
+        executedAt: { type: Date, default: Date.now },
+      },
+    ],
+
+    // Session timing
+    startedAt: { type: Date, default: Date.now },
+    endedAt: { type: Date },
   },
   { timestamps: true }
 );

@@ -20,6 +20,11 @@ export const sessionApi = {
     return response.data;
   },
 
+  getSessionDetails: async (id) => {
+    const response = await axiosInstance.get(`/sessions/${id}/details`);
+    return response.data;
+  },
+
   joinSession: async (id) => {
     const response = await axiosInstance.post(`/sessions/${id}/join`);
     return response.data;
@@ -30,10 +35,26 @@ export const sessionApi = {
     return response.data;
   },
 
-  endSession: async (id) => {
-    const response = await axiosInstance.post(`/sessions/${id}/end`);
+  endSession: async ({ id, codeSnapshots }) => {
+    const response = await axiosInstance.post(`/sessions/${id}/end`, { codeSnapshots });
     return response.data;
   },
+
+  saveCodeSnapshot: async ({ id, language, code }) => {
+    const response = await axiosInstance.post(`/sessions/${id}/save-code`, { language, code });
+    return response.data;
+  },
+
+  saveExecutionResult: async ({ id, language, code, output, success }) => {
+    const response = await axiosInstance.post(`/sessions/${id}/save-execution`, {
+      language,
+      code,
+      output,
+      success,
+    });
+    return response.data;
+  },
+
   getStreamToken: async () => {
     const response = await axiosInstance.get(`/chat/token`);
     return response.data;

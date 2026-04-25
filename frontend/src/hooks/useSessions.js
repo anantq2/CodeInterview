@@ -73,6 +73,36 @@ export const useEndSession = () => {
   return result;
 };
 
+export const useSessionDetails = (id) => {
+  const result = useQuery({
+    queryKey: ["sessionDetails", id],
+    queryFn: () => sessionApi.getSessionDetails(id),
+    enabled: !!id,
+  });
+
+  return result;
+};
+
+export const useSaveCodeSnapshot = () => {
+  const result = useMutation({
+    mutationKey: ["saveCodeSnapshot"],
+    mutationFn: sessionApi.saveCodeSnapshot,
+    // Silent — no toasts for auto-save
+  });
+
+  return result;
+};
+
+export const useSaveExecutionResult = () => {
+  const result = useMutation({
+    mutationKey: ["saveExecutionResult"],
+    mutationFn: sessionApi.saveExecutionResult,
+    // Silent — no toasts
+  });
+
+  return result;
+};
+
 export const useJoinByInviteCode = () => {
   const result = useMutation({
     mutationKey: ["joinByInviteCode"],

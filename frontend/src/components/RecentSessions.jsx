@@ -1,7 +1,8 @@
-import { Code2, Clock, Users, Trophy, Loader } from "lucide-react";
+import { Code2, Clock, Users, Trophy, Loader, Eye } from "lucide-react";
 import { getDifficultyBadgeClass } from "../lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router";
 
 const cardVariants = {
   hidden: { opacity: 0, y: 15 },
@@ -13,6 +14,8 @@ const cardVariants = {
 };
 
 function RecentSessions({ sessions, isLoading }) {
+  const navigate = useNavigate();
+
   return (
     <div className="glass-card rounded-2xl gradient-border mt-6">
       <div className="p-6">
@@ -38,7 +41,8 @@ function RecentSessions({ sessions, isLoading }) {
                 viewport={{ once: true }}
                 variants={cardVariants}
                 whileHover={{ y: -4 }}
-                className={`rounded-xl p-5 transition-all duration-300 ${session.status === "active"
+                onClick={() => navigate(`/session/${session._id}/review`)}
+                className={`rounded-xl p-5 transition-all duration-300 cursor-pointer group ${session.status === "active"
                     ? "bg-success/5 border border-success/20 glow-success"
                     : "bg-base-content/3 border border-base-content/5 hover:border-primary/15"
                   }`}
@@ -67,6 +71,15 @@ function RecentSessions({ sessions, isLoading }) {
                   </div>
                 </div>
 
+                {/* Code snippet preview */}
+                {session.codeSnapshots && session.codeSnapshots.length > 0 && (
+                  <div className="mb-3 rounded-lg bg-base-300/30 p-2 border border-base-content/5">
+                    <pre className="text-[10px] font-mono text-base-content/40 line-clamp-3 leading-relaxed overflow-hidden">
+                      {session.codeSnapshots[0].code?.substring(0, 150)}
+                    </pre>
+                  </div>
+                )}
+
                 <div className="space-y-2 text-xs text-base-content/45 mb-4">
                   <div className="flex items-center gap-2">
                     <Clock className="size-3.5" />
@@ -82,8 +95,9 @@ function RecentSessions({ sessions, isLoading }) {
 
                 <div className="flex items-center justify-between pt-3 border-t border-base-content/5">
                   <span className="text-[10px] font-bold text-base-content/40 uppercase tracking-wider">Completed</span>
-                  <span className="text-[10px] text-base-content/30">
-                    {new Date(session.updatedAt).toLocaleDateString()}
+                  <span className="flex items-center gap-1 text-[10px] text-primary/60 font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Eye className="size-3" />
+                    View Details
                   </span>
                 </div>
               </motion.div>

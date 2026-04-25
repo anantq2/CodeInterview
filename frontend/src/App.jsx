@@ -14,6 +14,7 @@ import { ROUTES, TOAST_CONFIG } from "./lib/constants";
 const HomePage = lazy(() => import("./pages/HomePage"));
 const ProblemPage = lazy(() => import("./pages/ProblemPage"));
 const SessionPage = lazy(() => import("./pages/SessionPage"));
+const SessionDetailPage = lazy(() => import("./pages/SessionDetailPage"));
 
 function App() {
   const { isSignedIn, isLoaded } = useUser();
@@ -32,6 +33,7 @@ function App() {
           <Route path={ROUTES.PROBLEMS} element={isSignedIn ? <ProblemsPage /> : <Navigate to={ROUTES.HOME} />} />
           <Route path="/problem/:id" element={isSignedIn ? <ProblemPage /> : <Navigate to={ROUTES.HOME} />} />
           <Route path="/session/:id" element={isSignedIn ? <SessionPage /> : <Navigate to={ROUTES.HOME} />} />
+          <Route path="/session/:id/review" element={isSignedIn ? <SessionDetailPage /> : <Navigate to={ROUTES.HOME} />} />
         </Routes>
       </Suspense>
 

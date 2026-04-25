@@ -1,4 +1,5 @@
 import express from "express";
+import { createServer } from "http";
 import path from "path";
 import cors from "cors";
 import { serve } from "inngest/express";
@@ -7,6 +8,7 @@ import { clerkMiddleware } from "@clerk/express";
 import { ENV } from "./lib/env.js";
 import { connectDB } from "./lib/db.js";
 import { inngest, functions } from "./lib/inngest.js";
+import { setupYjsWebSocket } from "./lib/yjsServer.js";
 
 import chatRoutes from "./routes/chatRoutes.js";
 import sessionRoutes from "./routes/sessionRoute.js";
@@ -79,7 +81,14 @@ app.get("/", (req, res) => {
 const startServer = async () => {
   try {
     await connectDB();
-    app.listen(ENV.PORT, () => console.log("Server is running on port:", ENV.PORT));
+
+    // Create HTTP server wrapping Express (needed for WebSocket upgrade)
+    const httpServer = createServer(app);
+
+    // Attach Yjs WebSocket server for real-time code collaboration
+    setupYjsWebSocket(httpServer);
+
+    httpServer.listen(ENV.PORT, () => console.log("Server is running on port:", ENV.PORT));
   } catch (error) {
     console.error("💥 Error starting the server", error);
   }
