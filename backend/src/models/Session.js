@@ -71,6 +71,7 @@ const sessionSchema = new mongoose.Schema(
 
     // Session timing
     startedAt: { type: Date, default: Date.now },
+    lastActivityAt: { type: Date, default: Date.now },
     endedAt: { type: Date },
   },
   { timestamps: true }

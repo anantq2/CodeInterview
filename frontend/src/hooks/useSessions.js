@@ -17,6 +17,7 @@ export const useActiveSessions = () => {
   const result = useQuery({
     queryKey: ["activeSessions"],
     queryFn: sessionApi.getActiveSessions,
+    refetchInterval: 30000,
   });
 
   return result;

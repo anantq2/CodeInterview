@@ -40,6 +40,11 @@ export const sessionApi = {
     return response.data;
   },
 
+  heartbeatSession: async (id) => {
+    const response = await axiosInstance.post(`/sessions/${id}/heartbeat`);
+    return response.data;
+  },
+
   saveCodeSnapshot: async ({ id, language, code }) => {
     const response = await axiosInstance.post(`/sessions/${id}/save-code`, { language, code });
     return response.data;
@@ -60,4 +65,3 @@ export const sessionApi = {
     return response.data;
   },
 };
-

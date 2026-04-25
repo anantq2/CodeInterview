@@ -7,6 +7,7 @@ import {
   getMyRecentSessions,
   getSessionById,
   getSessionDetails,
+  heartbeatSession,
   joinSession,
   joinByInviteCode,
   saveCodeSnapshot,
@@ -25,6 +26,7 @@ router.get("/:id", protectRoute, getSessionById);
 router.get("/:id/details", protectRoute, getSessionDetails);
 router.post("/:id/join", protectRoute, joinSession);
 router.post("/:id/end", protectRoute, endSession);
+router.post("/:id/heartbeat", protectRoute, heartbeatSession);
 router.post("/:id/save-code", protectRoute, saveCodeSnapshot);
 router.post("/:id/save-execution", protectRoute, saveExecutionResult);
 

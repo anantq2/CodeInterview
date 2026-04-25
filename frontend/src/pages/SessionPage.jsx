@@ -2,6 +2,7 @@ import { useUser } from "@clerk/clerk-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { useEndSession, useJoinSession, useSessionById, useSaveCodeSnapshot, useSaveExecutionResult } from "../hooks/useSessions";
+import { sessionApi } from "../api/sessions";
 import { PROBLEMS } from "../data/problems";
 import { executeCode } from "../lib/codeExecution";
 import Navbar from "../components/Navbar";
@@ -184,7 +185,7 @@ function SessionPage() {
 
   // ===== AUTO-SAVE CODE EVERY 30 SECONDS =====
   useEffect(() => {
-    if (!session || session.status !== "active") return;
+    if (session?.status !== "active") return;
     if (!isHost && !isParticipant) return;
 
     const interval = setInterval(() => {
@@ -197,6 +198,19 @@ function SessionPage() {
         );
       }
     }, 30000); // every 30 seconds
+
+    return () => clearInterval(interval);
+  }, [session?._id, session?.status, isHost, isParticipant, id]);
+
+  // Keep the session alive while an authorized user still has the room open.
+  useEffect(() => {
+    if (session?.status !== "active") return;
+    if (!isHost && !isParticipant) return;
+
+    sessionApi.heartbeatSession(id).catch(() => {});
+    const interval = setInterval(() => {
+      sessionApi.heartbeatSession(id).catch(() => {});
+    }, 60000);
 
     return () => clearInterval(interval);
   }, [session?._id, session?.status, isHost, isParticipant, id]);

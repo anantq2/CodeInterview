@@ -1,5 +1,11 @@
 import crypto from "crypto";
 import { chatClient, streamClient } from "../lib/stream.js";
+import {
+  completeInactiveSessions,
+  completeSession,
+  completeSessionIfInactive,
+  markSessionActive,
+} from "../lib/sessionCleanup.js";
 import Session from "../models/Session.js";
 
 export async function createSession(req, res) {
@@ -55,6 +61,8 @@ export async function createSession(req, res) {
 
 export async function getActiveSessions(_, res) {
   try {
+    await completeInactiveSessions();
+
     // only return public active sessions — private ones are join-by-invite only
     const sessions = await Session.find({ status: "active", isPrivate: { $ne: true } })
       .populate("host", "name profileImage email clerkId")
@@ -101,6 +109,8 @@ export async function getSessionById(req, res) {
 
     if (!session) return res.status(404).json({ message: "Session not found" });
 
+    await completeSessionIfInactive(session);
+
     // for private sessions, only host or participant can view
     if (session.isPrivate) {
       const isHost = session.host._id.toString() === userId.toString();
@@ -127,6 +137,10 @@ export async function joinSession(req, res) {
 
     if (!session) return res.status(404).json({ message: "Session not found" });
 
+    if (await completeSessionIfInactive(session)) {
+      return res.status(400).json({ message: "Cannot join a completed session" });
+    }
+
     if (session.status !== "active") {
       return res.status(400).json({ message: "Cannot join a completed session" });
     }
@@ -147,6 +161,7 @@ export async function joinSession(req, res) {
     if (session.participant) return res.status(409).json({ message: "Session is full" });
 
     session.participant = userId;
+    markSessionActive(session);
     await session.save();
 
     const channel = chatClient.channel("messaging", session.callId);
@@ -170,24 +185,33 @@ export async function joinByInviteCode(req, res) {
 
     if (!session) return res.status(404).json({ message: "Invalid invite code" });
 
+    if (await completeSessionIfInactive(session)) {
+      return res.status(400).json({ message: "This session has already ended" });
+    }
+
     if (session.status !== "active") {
       return res.status(400).json({ message: "This session has already ended" });
     }
 
     if (session.host.toString() === userId.toString()) {
       // host is re-opening their own session — just redirect
+      markSessionActive(session);
+      await session.save();
       return res.status(200).json({ session, alreadyIn: true });
     }
 
     if (session.participant) {
       // if current user is already the participant, let them rejoin
       if (session.participant.toString() === userId.toString()) {
+        markSessionActive(session);
+        await session.save();
         return res.status(200).json({ session, alreadyIn: true });
       }
       return res.status(409).json({ message: "Session is full" });
     }
 
     session.participant = userId;
+    markSessionActive(session);
     await session.save();
 
     const channel = chatClient.channel("messaging", session.callId);
@@ -229,6 +253,7 @@ export async function saveCodeSnapshot(req, res) {
       session.codeSnapshots.push({ userId, language, code });
     }
 
+    markSessionActive(session);
     await session.save();
     res.status(200).json({ message: "Code saved" });
   } catch (error) {
@@ -246,6 +271,10 @@ export async function saveExecutionResult(req, res) {
     const session = await Session.findById(id);
     if (!session) return res.status(404).json({ message: "Session not found" });
 
+    if (session.status !== "active") {
+      return res.status(400).json({ message: "Cannot save execution result to a completed session" });
+    }
+
     session.executionResults.push({
       userId,
       language,
@@ -259,6 +288,7 @@ export async function saveExecutionResult(req, res) {
       session.executionResults = session.executionResults.slice(-50);
     }
 
+    markSessionActive(session);
     await session.save();
     res.status(200).json({ message: "Execution result saved" });
   } catch (error) {
@@ -279,6 +309,8 @@ export async function getSessionDetails(req, res) {
       .populate("executionResults.userId", "name profileImage");
 
     if (!session) return res.status(404).json({ message: "Session not found" });
+
+    await completeSessionIfInactive(session);
 
     // Only host or participant can view session details
     const isHost = session.host._id.toString() === userId.toString();
@@ -335,21 +367,39 @@ export async function endSession(req, res) {
       }
     }
 
-    // delete stream video call
-    const call = streamClient.video.call("default", session.callId);
-    await call.delete({ hard: true });
-
-    // delete stream chat channel
-    const channel = chatClient.channel("messaging", session.callId);
-    await channel.delete();
-
-    session.status = "completed";
-    session.endedAt = new Date();
-    await session.save();
+    await completeSession(session);
 
     res.status(200).json({ session, message: "Session ended successfully" });
   } catch (error) {
     console.log("Error in endSession controller:", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+}
+
+export async function heartbeatSession(req, res) {
+  try {
+    const { id } = req.params;
+    const userId = req.user._id;
+
+    const session = await Session.findById(id);
+    if (!session) return res.status(404).json({ message: "Session not found" });
+
+    if (session.status !== "active") {
+      return res.status(400).json({ message: "Session is already completed" });
+    }
+
+    const isHost = session.host.toString() === userId.toString();
+    const isParticipant = session.participant?.toString() === userId.toString();
+    if (!isHost && !isParticipant) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    markSessionActive(session);
+    await session.save();
+
+    res.status(200).json({ message: "Session heartbeat saved" });
+  } catch (error) {
+    console.log("Error in heartbeatSession controller:", error.message);
     res.status(500).json({ message: "Internal Server Error" });
   }
 }

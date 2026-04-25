@@ -8,6 +8,7 @@ import { clerkMiddleware } from "@clerk/express";
 import { ENV } from "./lib/env.js";
 import { connectDB } from "./lib/db.js";
 import { inngest, functions } from "./lib/inngest.js";
+import { completeInactiveSessions, SESSION_IDLE_TIMEOUT_MS } from "./lib/sessionCleanup.js";
 import { setupYjsWebSocket } from "./lib/yjsServer.js";
 
 import chatRoutes from "./routes/chatRoutes.js";
@@ -87,6 +88,12 @@ const startServer = async () => {
 
     // Attach Yjs WebSocket server for real-time code collaboration
     setupYjsWebSocket(httpServer);
+
+    setInterval(() => {
+      completeInactiveSessions().catch((error) => {
+        console.error("Failed to cleanup inactive sessions:", error.message);
+      });
+    }, SESSION_IDLE_TIMEOUT_MS);
 
     httpServer.listen(ENV.PORT, () => console.log("Server is running on port:", ENV.PORT));
   } catch (error) {
